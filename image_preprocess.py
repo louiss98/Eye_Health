@@ -10,6 +10,8 @@ from typing import Dict, Iterable, List, Tuple
 import cv2
 import numpy as np
 
+from iris_detection import IrisConfig, create_combined_overlay, create_iris_mask, detect_iris_boundary
+
 
 @dataclass
 class StarburstConfig:
@@ -38,6 +40,7 @@ class PipelineConfig:
     initial_gaussian_kernel: int = 15
     dark_intensity_threshold: int = 110
     starburst: StarburstConfig = field(default_factory=StarburstConfig)
+    iris: IrisConfig = field(default_factory=IrisConfig)
 
 
 @dataclass
@@ -261,35 +264,78 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
     image = normalize_size(image, config.max_dimension)
     gray = prepare_grayscale(image, config.median_blur_kernel)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
     stem = path.stem
+    image_output_dir = output_dir / stem
+    image_output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Step 1: Detect pupil
     try:
-        result = run_starburst(gray, config)
+        pupil_result = run_starburst(gray, config)
     except Exception as exc:
-        print(f"{path.name}: starburst detector failed -> {exc}")
+        print(f"{path.name}: starburst pupil detector failed -> {exc}")
         return
 
-    centre_int = (int(round(result.centre[0])), int(round(result.centre[1])))
-    radius_int = max(1, int(round(result.radius)))
-    centre_int = (
-        int(np.clip(centre_int[0], 0, gray.shape[1] - 1)),
-        int(np.clip(centre_int[1], 0, gray.shape[0] - 1)),
+    pupil_centre_int = (int(round(pupil_result.centre[0])), int(round(pupil_result.centre[1])))
+    pupil_radius_int = max(1, int(round(pupil_result.radius)))
+    pupil_centre_int = (
+        int(np.clip(pupil_centre_int[0], 0, gray.shape[1] - 1)),
+        int(np.clip(pupil_centre_int[1], 0, gray.shape[0] - 1)),
     )
-    radius_int = min(radius_int, max_radius_from_centre(gray.shape[0], gray.shape[1], centre_int))
+    pupil_radius_int = min(pupil_radius_int, max_radius_from_centre(gray.shape[0], gray.shape[1], pupil_centre_int))
 
-    mask = create_pupil_mask(gray.shape, centre_int, radius_int)
-    overlay = create_overlay(image, centre_int, radius_int, (255, 0, 255))
+    # Step 2: Detect iris
+    try:
+        iris_result = detect_iris_boundary(
+            image, gray, pupil_result.centre, pupil_result.radius, config.iris
+        )
+    except Exception as exc:
+        print(f"{path.name}: iris detector failed -> {exc}")
+        # Still save pupil results even if iris fails
+        pupil_mask = create_pupil_mask(gray.shape, pupil_centre_int, pupil_radius_int)
+        pupil_overlay = create_overlay(image, pupil_centre_int, pupil_radius_int, (255, 0, 255))
+        cv2.imwrite(str(image_output_dir / "pupil_mask.png"), pupil_mask)
+        cv2.imwrite(str(image_output_dir / "pupil_overlay.png"), pupil_overlay)
+        print(
+            f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "
+            f"radius={pupil_radius_int}px score={pupil_result.score:.2f}"
+        )
+        if show:
+            display_overlay(f"{stem} - pupil only", pupil_overlay, config.display_poll_delay_ms)
+        return
 
-    cv2.imwrite(str(output_dir / f"{stem}_starburst_mask.png"), mask)
-    cv2.imwrite(str(output_dir / f"{stem}_starburst_overlay.png"), overlay)
+    iris_centre_int = (int(round(iris_result.centre[0])), int(round(iris_result.centre[1])))
+    iris_radius_int = max(1, int(round(iris_result.radius)))
+    iris_centre_int = (
+        int(np.clip(iris_centre_int[0], 0, gray.shape[1] - 1)),
+        int(np.clip(iris_centre_int[1], 0, gray.shape[0] - 1)),
+    )
+    iris_radius_int = min(iris_radius_int, max_radius_from_centre(gray.shape[0], gray.shape[1], iris_centre_int))
+
+    # Step 3: Create and save masks and overlays
+    pupil_mask = create_pupil_mask(gray.shape, pupil_centre_int, pupil_radius_int)
+    iris_mask = create_iris_mask(gray.shape, pupil_centre_int, pupil_radius_int, iris_centre_int, iris_radius_int)
+    
+    pupil_overlay = create_overlay(image, pupil_centre_int, pupil_radius_int, (255, 0, 255))
+    iris_overlay = create_overlay(image, iris_centre_int, iris_radius_int, (0, 255, 0))
+    combined_overlay = create_combined_overlay(
+        image, pupil_centre_int, pupil_radius_int, iris_centre_int, iris_radius_int
+    )
+
+    cv2.imwrite(str(image_output_dir / "pupil_mask.png"), pupil_mask)
+    cv2.imwrite(str(image_output_dir / "iris_mask.png"), iris_mask)
+    cv2.imwrite(str(image_output_dir / "pupil_overlay.png"), pupil_overlay)
+    cv2.imwrite(str(image_output_dir / "iris_overlay.png"), iris_overlay)
+    cv2.imwrite(str(image_output_dir / "combined_overlay.png"), combined_overlay)
 
     print(
-        f"{path.name}: starburst centre=({centre_int[0]}, {centre_int[1]}) radius={radius_int}px score={result.score:.2f}"
+        f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "
+        f"radius={pupil_radius_int}px score={pupil_result.score:.2f} | "
+        f"iris centre=({iris_centre_int[0]}, {iris_centre_int[1]}) "
+        f"radius={iris_radius_int}px score={iris_result.score:.2f}"
     )
 
     if show:
-        display_overlay(f"{stem} - starburst", overlay, config.display_poll_delay_ms)
+        display_overlay(f"{stem} - combined", combined_overlay, config.display_poll_delay_ms)
 
 
 def list_image_files(directory: Path) -> Iterable[Path]:
@@ -301,7 +347,7 @@ def list_image_files(directory: Path) -> Iterable[Path]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run the Starburst pupil detector on eye photos."
+        description="Run the Starburst pupil detector and iris boundary detection on eye photos."
     )
     parser.add_argument(
         "--input",
@@ -313,7 +359,7 @@ def parse_args() -> argparse.Namespace:
         "--output",
         type=Path,
         default=Path("output"),
-        help="Folder to write detector masks and overlays.",
+        help="Base folder for output; each image gets its own subfolder with labeled masks.",
     )
     parser.add_argument(
         "--max-dimension",
