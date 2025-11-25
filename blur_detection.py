@@ -29,6 +29,14 @@ class BlurConfig:
     min_region_pixels: int = 100
     # Fourier analysis parameters
     fourier_low_freq_ratio: float = 0.1  # Fraction of spectrum considered low freq
+    # Normalization constants for score scaling
+    # These scale raw scores to approximately 0-100 range for consistent comparison
+    laplacian_normalization: float = 10.0  # Laplacian variance divisor
+    tenegrad_normalization: float = 10.0   # Tenegrad sqrt(score) divisor
+
+
+# Small value to prevent division by zero in energy calculations
+_ENERGY_EPSILON = 1e-10
 
 
 @dataclass
@@ -225,7 +233,7 @@ def compute_fourier_blur_score(
 
     # Avoid division by zero
     total_energy = low_freq_energy + high_freq_energy
-    if total_energy < 1e-10:
+    if total_energy < _ENERGY_EPSILON:
         return 0.0
 
     # Return ratio of high frequency energy (higher = sharper)
@@ -260,13 +268,13 @@ def analyze_blur(
         image, mask, config.fourier_low_freq_ratio
     )
 
-    # Normalize scores for combination
-    # Laplacian variance can be very high, normalize to ~0-100 range
-    normalized_laplacian = min(100.0, laplacian_score / 10.0)
-
-    # Tenegrad is already in a reasonable range, normalize similarly
-    normalized_tenegrad = min(100.0, np.sqrt(tenegrad_score) / 10.0)
-
+    # Normalize scores for combination to approximately 0-100 range
+    normalized_laplacian = min(
+        100.0, laplacian_score / config.laplacian_normalization
+    )
+    normalized_tenegrad = min(
+        100.0, np.sqrt(tenegrad_score) / config.tenegrad_normalization
+    )
     # Fourier score is 0-1, scale to 0-100
     normalized_fourier = fourier_score * 100.0
 
