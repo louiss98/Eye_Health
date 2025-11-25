@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
@@ -10,6 +11,7 @@ from typing import Dict, Iterable, List, Tuple
 import cv2
 import numpy as np
 
+from blur_detection import BlurConfig, BlurResult, analyze_pupil_blur
 from iris_detection import IrisConfig, create_combined_overlay, create_iris_mask, detect_iris_boundary
 
 
@@ -41,6 +43,9 @@ class PipelineConfig:
     dark_intensity_threshold: int = 110
     starburst: StarburstConfig = field(default_factory=StarburstConfig)
     iris: IrisConfig = field(default_factory=IrisConfig)
+    blur: BlurConfig = field(default_factory=BlurConfig)
+    blur_threshold: float = 50.0  # Combined score below which pupil is considered blurry
+    blur_padding: int = 5  # Extra pixels around pupil to include in blur analysis
 
 
 @dataclass
@@ -145,6 +150,20 @@ def display_overlay(title: str, image: np.ndarray, poll_delay_ms: int) -> None:
         pass
     finally:
         cv2.destroyWindow(title)
+
+
+def _save_blur_results(output_dir: Path, blur_result: BlurResult) -> None:
+    """Save blur analysis results to JSON file."""
+    results = {
+        "laplacian_variance": float(blur_result.laplacian_score),
+        "tenegrad_score": float(blur_result.tenegrad_score),
+        "fourier_score": float(blur_result.fourier_score),
+        "combined_score": float(blur_result.combined_score),
+        "is_blurry": bool(blur_result.is_blurry),
+        "blur_threshold": float(blur_result.blur_threshold),
+    }
+    with open(output_dir / "blur_analysis.json", "w") as f:
+        json.dump(results, f, indent=2)
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +302,21 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
     )
     pupil_radius_int = min(pupil_radius_int, max_radius_from_centre(gray.shape[0], gray.shape[1], pupil_centre_int))
 
-    # Step 2: Detect iris
+    # Step 2: Extract pupil region and analyze blur
+    blur_result, pupil_crop, pupil_crop_mask = analyze_pupil_blur(
+        gray,
+        pupil_centre_int,
+        pupil_radius_int,
+        config.blur,
+        config.blur_threshold,
+        config.blur_padding,
+    )
+
+    # Save pupil crop if valid
+    if pupil_crop.size > 0:
+        cv2.imwrite(str(image_output_dir / "pupil_crop.png"), pupil_crop)
+
+    # Step 3: Detect iris
     try:
         iris_result = detect_iris_boundary(
             image, gray, pupil_result.centre, pupil_result.radius, config.iris
@@ -295,9 +328,15 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
         pupil_overlay = create_overlay(image, pupil_centre_int, pupil_radius_int, (255, 0, 255))
         cv2.imwrite(str(image_output_dir / "pupil_mask.png"), pupil_mask)
         cv2.imwrite(str(image_output_dir / "pupil_overlay.png"), pupil_overlay)
+        _save_blur_results(image_output_dir, blur_result)
         print(
             f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "
-            f"radius={pupil_radius_int}px score={pupil_result.score:.2f}"
+            f"radius={pupil_radius_int}px score={pupil_result.score:.2f} | "
+            f"blur: combined={blur_result.combined_score:.2f} "
+            f"(laplacian={blur_result.laplacian_score:.2f}, "
+            f"tenegrad={blur_result.tenegrad_score:.2f}, "
+            f"fourier={blur_result.fourier_score:.4f}) "
+            f"{'BLURRY' if blur_result.is_blurry else 'CLEAR'}"
         )
         if show:
             display_overlay(f"{stem} - pupil only", pupil_overlay, config.display_poll_delay_ms)
@@ -311,7 +350,7 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
     )
     iris_radius_int = min(iris_radius_int, max_radius_from_centre(gray.shape[0], gray.shape[1], iris_centre_int))
 
-    # Step 3: Create and save masks and overlays
+    # Step 4: Create and save masks and overlays
     pupil_mask = create_pupil_mask(gray.shape, pupil_centre_int, pupil_radius_int)
     iris_mask = create_iris_mask(gray.shape, pupil_centre_int, pupil_radius_int, iris_centre_int, iris_radius_int)
     
@@ -326,12 +365,18 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
     cv2.imwrite(str(image_output_dir / "pupil_overlay.png"), pupil_overlay)
     cv2.imwrite(str(image_output_dir / "iris_overlay.png"), iris_overlay)
     cv2.imwrite(str(image_output_dir / "combined_overlay.png"), combined_overlay)
+    _save_blur_results(image_output_dir, blur_result)
 
     print(
         f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "
         f"radius={pupil_radius_int}px score={pupil_result.score:.2f} | "
         f"iris centre=({iris_centre_int[0]}, {iris_centre_int[1]}) "
-        f"radius={iris_radius_int}px score={iris_result.score:.2f}"
+        f"radius={iris_radius_int}px score={iris_result.score:.2f} | "
+        f"blur: combined={blur_result.combined_score:.2f} "
+        f"(laplacian={blur_result.laplacian_score:.2f}, "
+        f"tenegrad={blur_result.tenegrad_score:.2f}, "
+        f"fourier={blur_result.fourier_score:.4f}) "
+        f"{'BLURRY' if blur_result.is_blurry else 'CLEAR'}"
     )
 
     if show:
