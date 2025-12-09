@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Eye Health — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="background-fx">
+    <div id="bg-image-layer" class="bg-image-layer"></div>
+    <div id="bg-tint-layer" class="bg-tint-layer"></div>
+    <div class="left-gradient" aria-hidden="true"></div>
+    <div class="brightness-blobs"></div>
+    <!-- Lava lamp hidden for now, replaced by image -->
+    <!-- <div class="lava-lamp">...</div> -->
+    <div class="dot-matrix"></div>
+  </div>
+
+  <div class="app">
+    <header class="app-header">
+      <div class="brand">Central Connecticut State University RGB EYE Segmentation</div>
+      <div class="subtitle">Patient dashboard</div>
+    </header>
+
+    <main class="content">
+      <section class="left-panel">
+        <h2 class="panel-title">RGB SEGMENTATION</h2>
+        <ul id="metrics-list" class="metrics-list">
+          <!-- Populated by JS -->
+        </ul>
+        <div class="panel-footer">
+          Dashboard • Local demo
+        </div>
+      </section>
+
+      <section class="right-panel">
+        <div class="preview-card">
+          <div class="preview-header">Image Preview</div>
+          <div id="preview-area" class="preview-area">No image loaded</div>
+          <div class="preview-footer">Use the processing script to generate overlays.</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <small>Local demo • static frontend</small>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

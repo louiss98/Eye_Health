@@ -1,0 +1,260 @@
+/* Minimal styling inspired by the mockup */
+:root{
+  --bg:#000000;
+  --panel:#120a18;
+  --accent:#1d0358; /* purple */
+  --muted:#9a86b1;
+  --text:#e6e1ee;
+  --success:#34d399;
+}
+*{box-sizing:border-box}
+html,body,#app{height:100%}
+body{
+  margin:0;
+  font-family: 'Inconsolata', 'Inter', Segoe UI, Roboto, Arial, sans-serif;
+  font-weight:400; /* Inconsolata regular */
+  background-color: var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  overflow-x: hidden;
+}
+
+/* Background Effects */
+:root {
+  --bg-blur: 1px; /* Control blur amount here */
+  --bg-tint: rgba(0, 0, 0, 0.25); /* Dark green tint control (lighter alpha) */
+}
+
+.background-fx {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg); /* Fallback/Base color */
+  overflow: hidden; /* Prevent zoom overflow */
+}
+
+.bg-image-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  filter: blur(var(--bg-blur));
+  opacity: 0; /* Start hidden for fade-in */
+  transition: opacity 1s ease-in-out;
+  transform: scale(1.1); /* Slight zoom */
+}
+
+.bg-tint-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-color: var(--bg-tint);
+  mix-blend-mode: multiply; /* Blends the tint nicely with the image */
+}
+
+.brightness-blobs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* Boost brightness of what's behind this layer */
+  backdrop-filter: brightness(1.3);
+  -webkit-backdrop-filter: brightness(1.3);
+  
+  /* Create blobs using radial gradients in the mask */
+  mask-image: 
+    radial-gradient(circle at center, black 0%, transparent 60%),
+    radial-gradient(circle at center, black 0%, transparent 50%);
+  -webkit-mask-image: 
+    radial-gradient(circle at center, black 0%, transparent 60%),
+    radial-gradient(circle at center, black 0%, transparent 50%);
+    
+  mask-size: 60% 60%, 50% 50%;
+  -webkit-mask-size: 60% 60%, 50% 50%;
+  
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  
+  animation: blob-float 30s infinite ease-in-out alternate;
+  will-change: mask-position;
+}
+
+@keyframes blob-float {
+  0% {
+    mask-position: 10% 10%, 90% 90%;
+    -webkit-mask-position: 10% 10%, 90% 90%;
+  }
+  50% {
+    mask-position: 80% 20%, 20% 80%;
+    -webkit-mask-position: 80% 20%, 20% 80%;
+  }
+  100% {
+    mask-position: 10% 10%, 90% 90%;
+    -webkit-mask-position: 10% 10%, 90% 90%;
+  }
+}
+
+.dot-matrix {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Create a grid of holes: transparent center (shows lava lamp), solid bg color outside */
+  /* tighter, smaller dots */
+  background-image: radial-gradient(circle, transparent 30%, var(--bg) 85%);
+  background-size: 8px 8px; /* denser pixel grid */
+  z-index: 3;
+}
+
+.lava-lamp {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  filter: blur(60px); /* Reduced blur slightly for better definition through dots */
+  opacity: 1.0; /* Increased opacity since we only see it through holes */
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  animation: float 20s infinite ease-in-out;
+}
+
+.blob-1 {
+  width: 500px;
+  height: 500px;
+  background: #6d28d9;
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  width: 400px;
+  height: 400px;
+  background: #4c1d95;
+  bottom: -50px;
+  right: -50px;
+  animation-delay: -5s;
+}
+
+.blob-3 {
+  width: 300px;
+  height: 300px;
+  background: #8b5cf6;
+  top: 40%;
+  left: 40%;
+  animation-delay: -10s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+.app{display:flex;flex-direction:column;min-height:100vh;position:relative}
+.app-header{padding:24px 32px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;gap:16px}
+.brand{font-weight:700;font-size:20px;color:var(--accent)}
+.subtitle{color:var(--muted);font-size:13px}
+.content{display:grid;grid-template-columns:360px 1fr;gap:28px;padding:28px}
+.left-panel{
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid #667085;
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+}
+.panel-title{
+  margin: 0 0 12px 0;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 20px 20px 0 20px;
+}
+.metrics-list{list-style:none;padding:0 20px;margin:0;display:flex;flex-direction:column;gap:12px}
+.metric-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;transition:background .16s}
+.metric-item:hover{background:rgba(255,255,255,0.02)}
+.metric-icon{
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  color:#fff;
+  position:relative;
+  overflow:hidden; /* allow semicircle via pseudo-element */
+  /* squircle-like corners (iOS-style) */
+  border-radius: 12px;
+}
+.icon-dot{display:none} /* hide dots by default */
+.metric-body{display:flex;flex-direction:column}
+.metric-title{font-size:15px;margin:0}
+.metric-sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+.right-panel{display:flex;align-items:flex-start}
+.preview-card{flex:1;background:var(--panel);padding:18px;border-radius:10px;min-height:320px}
+.preview-header{color:var(--muted);font-size:13px;margin-bottom:10px}
+.preview-area{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);height:220px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.preview-footer{color:var(--muted);font-size:12px;margin-top:10px}
+
+.app-footer{padding:14px 28px;border-top:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+
+/* color variants */
+/* default style uses icon-ok gradient */
+.metric-icon{
+  background:linear-gradient(180deg,var(--success),#059669);
+}
+.icon-warn{background:#ffb020;color:#111}
+.icon-neutral{background:#2b2b39}
+
+/* special white background for camera item */
+.metric-item.camera-item .metric-icon{
+  background:#fff;
+  color:#111;
+}
+
+/* left panel footer */
+.panel-footer{
+  margin-top: 16px;
+  padding: 12px 20px 20px 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Subtle dark gradient on the left to make the left panel pop */
+.left-gradient{
+  position:absolute;
+  top:0;
+  left:0;
+  height:100%;
+  width:420px; /* covers the left panel and some margin */
+  max-width:40%;
+  pointer-events:none;
+  z-index:2; /* sit above image/tint but beneath dot-matrix and UI */
+  background: linear-gradient(90deg, rgba(3,6,10,0.55) 0%, rgba(3,6,10,0.35) 30%, rgba(3,6,10,0.0) 70%);
+  transition: opacity .3s ease;
+}
+@media (max-width:900px){
+  .content{grid-template-columns:1fr;}
+}
