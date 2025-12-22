@@ -166,6 +166,65 @@ def _save_blur_results(output_dir: Path, blur_result: BlurResult) -> None:
         json.dump(results, f, indent=2)
 
 
+def _save_metrics_summary(
+    output_dir: Path,
+    source_image: Path,
+    pupil_result: DetectionResult,
+    pupil_centre: Tuple[int, int],
+    pupil_radius: int,
+    blur_result: BlurResult,
+    pupil_crop_exists: bool,
+    iris_result: IrisResult | None = None,
+    iris_centre: Tuple[int, int] | None = None,
+    iris_radius: int | None = None,
+) -> None:
+    """Save consolidated metrics (pupil, iris, blur) to JSON for the UI."""
+    metrics: Dict[str, object] = {
+        "image": source_image.name,
+        "pupil": {
+            "centre": [int(pupil_centre[0]), int(pupil_centre[1])],
+            "radius_px": int(pupil_radius),
+            "score": float(pupil_result.score),
+        },
+        "blur": {
+            "laplacian_variance": float(blur_result.laplacian_score),
+            "tenegrad_score": float(blur_result.tenegrad_score),
+            "fourier_score": float(blur_result.fourier_score),
+            "combined_score": float(blur_result.combined_score),
+            "is_blurry": bool(blur_result.is_blurry),
+            "blur_threshold": float(blur_result.blur_threshold),
+        },
+        "files": {
+            "pupil_mask": "pupil_mask.png",
+            "iris_mask": None,
+            "pupil_overlay": "pupil_overlay.png",
+            "iris_overlay": None,
+            "combined_overlay": None,
+            "pupil_crop": "pupil_crop.png" if pupil_crop_exists else None,
+            "blur_analysis": "blur_analysis.json",
+        },
+    }
+
+    if iris_result is not None and iris_centre is not None and iris_radius is not None:
+        metrics["iris"] = {
+            "centre": [int(iris_centre[0]), int(iris_centre[1])],
+            "radius_px": int(iris_radius),
+            "score": float(iris_result.score),
+            "edge_points": int(len(iris_result.edge_points)),
+            "pupil_ratio": float(iris_radius / max(1e-6, pupil_radius)),
+        }
+        metrics["files"].update(
+            {
+                "iris_mask": "iris_mask.png",
+                "iris_overlay": "iris_overlay.png",
+                "combined_overlay": "combined_overlay.png",
+            }
+        )
+
+    with open(output_dir / "metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
+
+
 # ---------------------------------------------------------------------------
 # Starburst (Li et al.)
 # ---------------------------------------------------------------------------
@@ -312,8 +371,10 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
         config.blur_padding,
     )
 
+    pupil_crop_exists = bool(pupil_crop.size > 0)
+
     # Save pupil crop if valid
-    if pupil_crop.size > 0:
+    if pupil_crop_exists:
         cv2.imwrite(str(image_output_dir / "pupil_crop.png"), pupil_crop)
 
     # Step 3: Detect iris
@@ -329,6 +390,15 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
         cv2.imwrite(str(image_output_dir / "pupil_mask.png"), pupil_mask)
         cv2.imwrite(str(image_output_dir / "pupil_overlay.png"), pupil_overlay)
         _save_blur_results(image_output_dir, blur_result)
+        _save_metrics_summary(
+            image_output_dir,
+            path,
+            pupil_result,
+            pupil_centre_int,
+            pupil_radius_int,
+            blur_result,
+            pupil_crop_exists,
+        )
         print(
             f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "
             f"radius={pupil_radius_int}px score={pupil_result.score:.2f} | "
@@ -366,6 +436,18 @@ def process_image_file(path: Path, output_dir: Path, config: PipelineConfig, sho
     cv2.imwrite(str(image_output_dir / "iris_overlay.png"), iris_overlay)
     cv2.imwrite(str(image_output_dir / "combined_overlay.png"), combined_overlay)
     _save_blur_results(image_output_dir, blur_result)
+    _save_metrics_summary(
+        image_output_dir,
+        path,
+        pupil_result,
+        pupil_centre_int,
+        pupil_radius_int,
+        blur_result,
+        pupil_crop_exists,
+        iris_result=iris_result,
+        iris_centre=iris_centre_int,
+        iris_radius=iris_radius_int,
+    )
 
     print(
         f"{path.name}: pupil centre=({pupil_centre_int[0]}, {pupil_centre_int[1]}) "

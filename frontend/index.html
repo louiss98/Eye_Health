@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <div class="background-fx">
@@ -27,6 +27,16 @@
     </header>
 
     <main class="content">
+      <section class="collection-strip" aria-label="Eye image collection">
+        <div class="collection-label">
+          <span>Eye Collection</span>
+          <span class="collection-hint">Scroll</span>
+        </div>
+        <div id="image-collection" class="collection-track" role="listbox" aria-label="Eye image collection">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
       <section class="left-panel">
         <h2 class="panel-title">RGB SEGMENTATION</h2>
         <ul id="metrics-list" class="metrics-list">
@@ -51,6 +61,6 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
