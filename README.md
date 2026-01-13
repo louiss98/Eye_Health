@@ -34,6 +34,7 @@ Images should be added to the `./frontend/images` folder.
 <img width="626" height="259" alt="Screenshot 2026-01-13 110522" src="https://github.com/user-attachments/assets/cc90f96f-81cd-4330-af16-2c3c7ca1625a" />
 
 ## Run the Pipeline
+<img width="1825" height="332" alt="Screenshot 2026-01-13 112320" src="https://github.com/user-attachments/assets/2cabb334-e328-4ccd-a13e-b2dfd9220dd8" />
 
 From the repository root (`C:\Development\Eye_Health`):
 
