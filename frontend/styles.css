@@ -174,7 +174,7 @@ body{
 .app-header{padding:24px 32px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;gap:16px;position:relative;z-index:4}
 .brand{font-weight:700;font-size:20px;color:#8a6bff;text-shadow:0 2px 12px rgba(0,0,0,0.6);background:rgba(3,6,10,0.55);padding:6px 10px;border-radius:8px}
 .subtitle{color:var(--muted);font-size:13px}
-.content{display:grid;grid-template-columns:360px 1fr;gap:28px;padding:28px}
+.content{display:grid;grid-template-columns:360px 1fr;gap:28px;padding:28px;align-items:stretch}
 .collection-strip{
   grid-column: 1 / -1;
   background: rgba(0, 0, 0, 0.6);
@@ -248,6 +248,9 @@ body{
   position: relative;
   z-index: 3;
   overflow: hidden;
+  display:flex;
+  flex-direction:column;
+  min-height: 900px;
 }
 .panel-title{
   margin: 0 0 12px 0;
@@ -277,7 +280,7 @@ body{
 .metric-title{font-size:15px;margin:0}
 .metric-sub{font-size:12px;color:var(--muted);margin-top:3px}
 
-.right-panel{display:flex;align-items:flex-start}
+.right-panel{display:flex;align-items:stretch;min-height: 560px}
 .preview-card{flex:1;background:var(--panel);padding:18px;border-radius:10px;min-height:320px}
 .preview-header{color:var(--muted);font-size:13px;margin-bottom:10px}
 .preview-area{
@@ -339,7 +342,6 @@ body{
   border-radius:10px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,0.08);
-  max-height:180px;
   max-width:100%;
 }
 .preview-image-wrap img{
