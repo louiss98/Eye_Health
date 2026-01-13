@@ -26,6 +26,13 @@ If dependencies are missing, install them in your environment (example):
 pip install opencv-python numpy
 ```
 
+## Adding Images
+Images should be added to the `./frontend/images` folder.
+<img width="616" height="318" alt="Screenshot 2026-01-13 110447" src="https://github.com/user-attachments/assets/e7c22810-60c8-4c46-9393-6cbb9211c3d4" />
+<img width="618" height="150" alt="Screenshot 2026-01-13 110504" src="https://github.com/user-attachments/assets/3d25a548-5323-45ef-a71f-3108902d8936" />
+<img width="616" height="144" alt="Screenshot 2026-01-13 110513" src="https://github.com/user-attachments/assets/252c0f5a-f4c0-45b1-a276-5e0f7f6cc40a" />
+<img width="626" height="259" alt="Screenshot 2026-01-13 110522" src="https://github.com/user-attachments/assets/cc90f96f-81cd-4330-af16-2c3c7ca1625a" />
+
 ## Run the Pipeline
 
 From the repository root (`C:\Development\Eye_Health`):
@@ -39,6 +46,8 @@ Optional flags:
 - `--show` displays interactive overlay windows while processing.
 
 ## View Results in the Frontend
+
+<img width="1336" height="1299" alt="Screenshot 2026-01-13 111235" src="https://github.com/user-attachments/assets/17626efc-d0f6-4894-91c2-668a76034758" />
 
 The frontend is file-based and expects to fetch assets from `data/` and `output/`, so serve the repository root.
 
@@ -61,5 +70,5 @@ For each input image, the pipeline writes a folder under `output/<image-stem>/` 
 
 ## Notes
 
-- The frontend is intentionally static (no backend) to support offline review and reproducible research runs.
+- The frontend is intentionally static (no backend).
 - If you add new images to `data/images/`, update the `imageFiles` list in `frontend/app.js` so they appear in the UI.
